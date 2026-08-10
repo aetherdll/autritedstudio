@@ -1,0 +1,4 @@
+#include "resources.h"
+
+IDI_APP_ICON   ICON   "icons/icon.ico"
+IDR_INDEX_HTML RCDATA "resources/index.html"
