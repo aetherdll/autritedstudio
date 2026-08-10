@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Autrited Studio</title>
+    <style>
+        :root {
+            --bg-dark: #181818;
+            --bg-sidebar: #202020;
+            --bg-editor: #1e1e1e;
+            --bg-hover: #2a2d2e;
+            --accent: #0078d4;
+            --border: #2b2b2b;
+            --text-main: #cccccc;
+            --text-muted: #858585;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Top Bar */
+        .titlebar {
+            height: 35px;
+            background-color: var(--bg-dark);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 12px;
+            border-bottom: 1px solid var(--border);
+            font-size: 12px;
+        }
+
+        .brand { font-weight: 600; color: #fff; display: flex; align-items: center; gap: 8px; }
+        .brand span { color: var(--accent); }
+
+        /* Workspace Layout */
+        .workspace { display: flex; flex: 1; overflow: hidden; }
+
+        /* Sidebar / File Explorer */
+        .sidebar {
+            width: 260px;
+            background-color: var(--bg-sidebar);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar-header {
+            padding: 10px 12px;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-muted);
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .actions { display: flex; gap: 4px; }
+        .btn-icon {
+            background: transparent;
+            border: none;
+            color: var(--text-main);
+            cursor: pointer;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 12px;
+        }
+        .btn-icon:hover { background-color: var(--bg-hover); }
+
+        .file-tree {
+            flex: 1;
+            overflow-y: auto;
+            padding: 8px 0;
+        }
+
+        .tree-item {
+            padding: 6px 12px;
+            font-size: 13px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-main);
+        }
+        .tree-item:hover { background-color: var(--bg-hover); }
+        .tree-item.folder { font-weight: 600; color: #fff; }
+        .tree-item.file { padding-left: 28px; color: #d4d4d4; }
+
+        /* Editor Area */
+        .editor-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background-color: var(--bg-editor);
+        }
+
+        .tabs {
+            height: 35px;
+            background-color: var(--bg-sidebar);
+            display: flex;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .tab {
+            padding: 0 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            background-color: var(--bg-dark);
+            border-right: 1px solid var(--border);
+            color: var(--text-muted);
+            cursor: pointer;
+        }
+
+        .tab.active {
+            background-color: var(--bg-editor);
+            color: #fff;
+            border-top: 2px solid var(--accent);
+        }
+
+        .code-area {
+            flex: 1;
+            width: 100%;
+            height: 100%;
+            background-color: var(--bg-editor);
+            color: #d4d4d4;
+            border: none;
+            outline: none;
+            padding: 16px;
+            font-family: 'Consolas', 'Cascadia Code', monospace;
+            font-size: 14px;
+            line-height: 1.5;
+            resize: none;
+            user-select: text;
+        }
+
+        /* Status Bar */
+        .statusbar {
+            height: 24px;
+            background-color: var(--accent);
+            color: #fff;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 12px;
+        }
+
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-thumb { background: #424242; border-radius: 4px; }
+    </style>
+</head>
+<body>
+
+    <div class="titlebar">
+        <div class="brand"><span>Autrited</span> Studio v1.0</div>
+        <div id="activePathDisplay" style="color: var(--text-muted);"></div>
+    </div>
+
+    <div class="workspace">
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <span>Gezgin</span>
+                <div class="actions">
+                    <button class="btn-icon" onclick="promptNewFile()" title="Yeni Dosya">📄+</button>
+                    <button class="btn-icon" onclick="promptNewFolder()" title="Yeni Klasör">📁+</button>
+                    <button class="btn-icon" onclick="refreshWorkspace()" title="Yenile">↻</button>
+                </div>
+            </div>
+            <div class="file-tree" id="fileTree">
+                <!-- Dosyalar ve Klasörler C++ tarafından buraya aktarılır -->
+            </div>
+        </div>
+
+        <div class="editor-container">
+            <div class="tabs">
+                <div class="tab active" id="activeTab">main.cpp</div>
+            </div>
+            <textarea class="code-area" id="editor" placeholder="Kodlarınızı buraya yazın..." spellcheck="false"></textarea>
+        </div>
+    </div>
+
+    <script>
+        let currentFilePath = "C:\\Autrited Studio\\Projects\\main.cpp";
+        let currentFolder = ""; // Alt klasör seçimi için
+
+        function sendToCpp(action, payload = {}) {
+            if (window.chrome && window.chrome.webview) {
+                window.chrome.webview.postMessage({
+                    action: action,
+                    ...payload
+                });
+            }
+        }
+
+        if (window.chrome && window.chrome.webview) {
+            window.chrome.webview.addEventListener('message', event => {
+                const msg = event.data;
+                
+                if (msg.type === "file_content") {
+                    document.getElementById("editor").value = msg.content;
+                    document.getElementById("activeTab").innerText = msg.filename;
+                    document.getElementById("statusText").innerText = "Açıldı: " + msg.path;
+                    currentFilePath = msg.path;
+                } 
+                else if (msg.type === "workspace_structure") {
+                    renderFileTree(msg.structure);
+                }
+                else if (msg.type === "status") {
+                    document.getElementById("statusText").innerText = msg.message;
+                    refreshWorkspace();
+                }
+            });
+        }
+
+        // CTRL+S Kaydetme
+        document.addEventListener('keydown', e => {
+            if (e.ctrlKey && e.key === 's') {
+                e.preventDefault();
+                saveCurrentFile();
+            }
+        });
+
+        function saveCurrentFile() {
+            const content = document.getElementById("editor").value;
+            sendToCpp("save_file", { path: currentFilePath, content: content });
+        }
+
+        // Yeni Dosya Oluşturma İstemi
+        function promptNewFile() {
+            const filename = prompt("Yeni dosya adı (Örn: utils.cpp veya Klasor/utils.cpp):");
+            if (filename) {
+                sendToCpp("create_file", { filename: filename });
+            }
+        }
+
+        // Yeni Klasör Oluşturma İstemi
+        function promptNewFolder() {
+            const folderName = prompt("Yeni klasör adı girin (Örn: Modules veya Helper):");
+            if (folderName) {
+                sendToCpp("create_directory", { folderName: folderName });
+            }
+        }
+
+        function refreshWorkspace() {
+            sendToCpp("get_workspace_structure");
+        }
+
+        // Klasör ve Dosya Ağacını Ekran Üzerinde Çizdirme
+        function renderFileTree(structure) {
+            const tree = document.getElementById("fileTree");
+            tree.innerHTML = `<div class="tree-item folder">📁 Projects</div>`;
+            
+            structure.forEach(item => {
+                const div = document.createElement("div");
+                
+                if (item.is_directory) {
+                    div.className = "tree-item folder";
+                    div.style.paddingLeft = (12 + item.depth * 14) + "px";
+                    div.innerText = "📂 " + item.name;
+                } else {
+                    div.className = "tree-item file";
+                    div.style.paddingLeft = (12 + item.depth * 14) + "px";
+                    div.innerText = "📄 " + item.name;
+                    div.onclick = () => {
+                        sendToCpp("read_file", { relativePath: item.relative_path });
+                    };
+                }
+                tree.appendChild(div);
+            });
+        }
+
+        window.onload = () => {
+            setTimeout(() => refreshWorkspace(), 300);
+        };
+    </script>
+</body>
+</html>
